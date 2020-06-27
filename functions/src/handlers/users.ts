@@ -2,8 +2,21 @@ import { Response, Request } from 'express'
 import * as path from 'path'
 import * as fs from 'fs'
 import * as BusBoy from 'busboy'
+
 import { firebaseConfig } from '../config/firebase'
 import { db, admin } from '../services/admin'
+import { reduceUserDetails } from '../validations/user'
+
+const addUserDetails = async (request: Request, response: Response) => {
+  try {
+    const userDetails = reduceUserDetails(request.body)
+    await db.doc(`users/${request.user.handle}`).update(userDetails)
+    return response.json({ message: 'Details updated successfully' })
+  } catch (err) {
+    console.error(err)
+    return response.status(500).json({ error: err.code })
+  }
+}
 
 const uploadImage = async (request: Request, response: Response) => {
   try {
@@ -65,4 +78,4 @@ const uploadImage = async (request: Request, response: Response) => {
   }
 }
 
-export { uploadImage }
+export { addUserDetails, uploadImage }

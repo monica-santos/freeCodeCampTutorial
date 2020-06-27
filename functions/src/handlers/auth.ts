@@ -35,12 +35,15 @@ const signup = async (request: Request, response: Response) => {
       .auth()
       .createUserWithEmailAndPassword(email, password)
 
+    const profilePicture = 'blank-profile-picture.png'
+
     const token = await user?.getIdToken()
     const userCredentials = {
       handle,
       email,
       createdAt: new Date().toISOString(),
-      userId: user?.uid
+      userId: user?.uid,
+      imageUrl: `https://firebasestorage.googleapis.com/v0/b/${firebaseConfig.storageBucket}/o/${profilePicture}?alt=media`
     }
 
     await db.doc(`users/${handle}`).set(userCredentials)

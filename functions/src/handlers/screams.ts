@@ -44,11 +44,11 @@ const getAllScreams = async (_: Request, response: Response) => {
 const getScream = async (request: Request, response: Response) => {
   try {
     const { screamId } = request.params
-    
+
     const doc = await db.doc(`screams/${screamId}`).get()
 
     if (!doc.exists)
-      return response.status(404).json({ error: 'Scream not find' })
+      return response.status(404).json({ error: 'Scream not found' })
 
     const data = await db
       .collection('comments')
@@ -61,8 +61,41 @@ const getScream = async (request: Request, response: Response) => {
     return response.json({ screamId: doc.id, ...doc.data(), comments })
   } catch (err) {
     console.error(err)
-    return response.json([])
+    return response.status(500).json({ error: err.code })
   }
 }
 
-export { createScream, getAllScreams, getScream }
+const addCommentOnScream = async (request: Request, response: Response) => {
+  try {
+    const { body } = request.body
+    const { screamId } = request.params
+    const { handle: userHandle, imageUrl: userImage } = request.user
+
+    if (body.trim() === '')
+      return response.status(500).json({ error: 'Must not be empty' })
+    
+    const doc = await db.doc(`screams/${screamId}`).get()
+    if (!doc.exists)
+      return response.status(404).json({ error: 'Scream not found' })
+
+    const comment = {
+      body,
+      createdAt: new Date().toISOString(),
+      screamId,
+      userHandle,
+      userImage
+    }
+    console.log(':::::: comment', comment)
+    await db
+      .collection('comments')
+      .add(comment)
+
+
+    return response.json({ comment })
+  } catch (err) {
+    console.error(err)
+    return response.status(500).json({ error: err.code })
+  }
+}
+
+export { createScream, getAllScreams, getScream, addCommentOnScream }

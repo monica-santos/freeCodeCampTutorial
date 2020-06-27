@@ -3,6 +3,8 @@ import * as admin from 'firebase-admin'
 import * as firebase from 'firebase'
 import * as express from 'express'
 import { firebaseConfig } from './config/firebase'
+import { isEmptyString, isEmail } from './validations/signup'
+import { SignUpErros } from './interfaces/SignUpErros'
 
 firebase.initializeApp(firebaseConfig)
 admin.initializeApp()
@@ -49,7 +51,18 @@ app.post('/screams', async (request, response) => {
 
 app.post('/signup', async (request, response) => {
   const { email, password, confirmPassword, handle } = request.body
-  console.log('::: confirmPassword', confirmPassword)
+
+  const errors: SignUpErros = {}
+
+  if (isEmptyString(email)) errors.email = 'Must not be empty'
+  else if (!isEmail(email)) errors.email = 'Must be a valid email address'
+
+  if (isEmptyString(password)) errors.password = 'Must not be empty'
+  else if (password !== confirmPassword)
+    errors.password = 'Passwords must match'
+
+  if (Object.keys(errors).length) return response.status(400).json({ errors })
+
   try {
     const doc = await db.doc(`users/${handle}`).get()
     if (doc.exists) {

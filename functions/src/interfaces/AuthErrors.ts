@@ -1,4 +1,4 @@
-export interface SignUpErros {
+export interface AuthErrors {
   email?: string
   password?: string
 }

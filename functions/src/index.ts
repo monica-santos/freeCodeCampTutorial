@@ -4,7 +4,36 @@ import * as firebase from 'firebase'
 import * as express from 'express'
 import { firebaseConfig } from './config/firebase'
 import { isEmptyString, isEmail } from './validations/signup'
-import { SignUpErros } from './interfaces/SignUpErros'
+import { AuthErrors } from './interfaces/AuthErrors'
+
+export const FBAuth = async (
+  request: express.Request,
+  response: express.Response,
+  next: express.NextFunction
+) => {
+  const { authorization } = request.headers
+  if (!authorization || !authorization.startsWith('Bearer'))
+    return response.status(403).json({ message: 'Unauthorized' })
+
+  const token = authorization.split('Bearer ')[1]
+
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token)
+    request.user = decodedToken
+
+    const data = await db
+      .collection('users')
+      .where('userId', '==', request.user.uid)
+      .limit(1)
+      .get()
+
+    request.user.handle = data.docs[0].data().handle
+    return next()
+  } catch (err) {
+    console.error(err)
+    return response.status(403).json(err)
+  }
+}
 
 firebase.initializeApp(firebaseConfig)
 admin.initializeApp()
@@ -12,7 +41,7 @@ admin.initializeApp()
 const db = admin.firestore()
 const app = express()
 
-app.get('/screams', async (_, response) => {
+app.get('/screams', FBAuth, async (_, response) => {
   try {
     const { docs } = await db
       .collection('screams')
@@ -31,8 +60,10 @@ app.get('/screams', async (_, response) => {
   }
 })
 
-app.post('/screams', async (request, response) => {
-  const { body, userHandle } = request.body
+app.post('/screams', FBAuth, async (request, response) => {
+  const { body } = request.body
+  const { handle: userHandle } = request.user
+
   try {
     const { id } = await db.collection('screams').add({
       body,
@@ -52,7 +83,7 @@ app.post('/screams', async (request, response) => {
 app.post('/signup', async (request, response) => {
   const { email, password, confirmPassword, handle } = request.body
 
-  const errors: SignUpErros = {}
+  const errors: AuthErrors = {}
 
   if (isEmptyString(email)) errors.email = 'Must not be empty'
   else if (!isEmail(email)) errors.email = 'Must be a valid email address'
@@ -95,6 +126,34 @@ app.post('/signup', async (request, response) => {
     console.error(err)
     if (err.code === 'auth/email-already-in-use')
       return response.status(500).json({ error: err.code })
+    return response.status(500).json({ error: err.code })
+  }
+})
+
+app.post('/login', async (request, response) => {
+  const { email, password } = request.body
+
+  const errors: AuthErrors = {}
+
+  if (isEmptyString(email)) errors.email = 'Must not be empty'
+  if (isEmptyString(password)) errors.password = 'Must not be empty'
+
+  if (Object.keys(errors).length) return response.status(400).json({ errors })
+
+  try {
+    const { user } = await firebase
+      .auth()
+      .signInWithEmailAndPassword(email, password)
+
+    const token = await user?.getIdToken()
+
+    return response.json({ token })
+  } catch (err) {
+    if (err.code === 'auth/wrong-password')
+      return response
+        .status(403)
+        .json({ general: 'Wrong credential, please try again' })
+
     return response.status(500).json({ error: err.code })
   }
 })

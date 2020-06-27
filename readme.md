@@ -1,6 +1,13 @@
 # Credentials
 
-To use `firebase serve, you need to set your credentials:
+To use `firebase serve`, you need to set your credentials, there are some ways to do this.
+
+declare on your **.env** file:
+```env
+GOOGLE_APPLICATION_CREDENTIALS=path/to/serviceAccountKey.json
+```
+
+export it:
 
 ```sh
 export GOOGLE_APPLICATION_CREDENTIALS="path/to/serviceAccountKey.json"

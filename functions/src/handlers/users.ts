@@ -7,6 +7,29 @@ import { firebaseConfig } from '../config/firebase'
 import { db, admin } from '../services/admin'
 import { reduceUserDetails } from '../validations/user'
 
+const getAuthenticatedUser = async (request: Request, response: Response) => {
+  
+  try {
+    const doc = await db.doc(`users/${request.user.handle}`).get()
+    if (!doc.exists)
+      return response.status(500).json({ error: "Could't get the user" })
+
+    const credentials = doc.data()
+
+    const docs = await db
+      .collection('likes')
+      .where('userHandle', '==', request.user.handle)
+      .get()
+
+    const likes = docs.docs.map((like) => like.data())
+
+    return response.json({ credentials, likes })
+  } catch (err) {
+    console.error(err)
+    return response.status(500).json({ error: err.code })
+  }
+}
+
 const addUserDetails = async (request: Request, response: Response) => {
   try {
     const userDetails = reduceUserDetails(request.body)
@@ -78,4 +101,4 @@ const uploadImage = async (request: Request, response: Response) => {
   }
 }
 
-export { addUserDetails, uploadImage }
+export { getAuthenticatedUser, addUserDetails, uploadImage }

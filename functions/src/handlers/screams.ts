@@ -48,12 +48,12 @@ const deleteScream = async (request: Request, response: Response) => {
     const { screamId } = request.params
     const document = await db.doc(`screams/${screamId}`)
 
-    const doc = await document.get()
+    const scream = await document.get()
 
-    if (!doc.exists)
+    if (!scream.exists)
       return response.status(404).json({ error: 'Scream not found' })
 
-    if (doc.data()?.userHandle !== request.user.handle)
+    if (scream.data()?.userHandle !== request.user.handle)
       return response.status(403).json({ error: 'Unauthorized' })
 
     const [commentsData, likesData] = await Promise.all([
@@ -154,7 +154,8 @@ const addLikeToScream = async (request: Request, response: Response) => {
     })
 
     const screamData = { ...doc.data() }
-    ;(screamData.screamId = doc.id), screamData.likeCount++
+    screamData.screamId = doc.id
+    screamData.likeCount++
 
     await db
       .doc(`/screams/${screamId}`)
@@ -192,7 +193,8 @@ const removeLikeFromScream = async (request: Request, response: Response) => {
     await db.doc(`likes/${likeId}`).delete()
 
     const screamData = { ...doc.data() }
-    ;(screamData.screamId = doc.id), screamData.likeCount--
+    screamData.screamId = doc.id
+    screamData.likeCount--
 
     await db
       .doc(`/screams/${screamId}`)

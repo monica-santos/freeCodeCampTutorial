@@ -25,7 +25,7 @@ export const FBAuth = async (
 
     request.user.handle = data.docs[0].data().handle
     request.user.imageUrl = data.docs[0].data().imageUrl
-    return next()
+    next()
   } catch (err) {
     console.error(err)
     return response.status(403).json(err)

@@ -33,7 +33,6 @@ app.post('/user/notifications', FBAuth, markNotificationRead)
 
 app.get('/user/:handle', getUserDetails)
 
-
 app.post('/screams', FBAuth, createScream)
 app.delete('/scream/:screamId', FBAuth, deleteScream)
 app.post('/scream/:screamId/comment', FBAuth, addCommentOnScream)
@@ -50,15 +49,15 @@ export const createNotificationsOnLike = functions.firestore
   .onCreate(async (snapshot) => {
     try {
       const doc = await db.doc(`/screams/${snapshot.data().screamId}`).get()
-
-      await db.doc(`notifications/${snapshot.id}`).set({
-        createdAt: new Date().toISOString(),
-        recipient: doc.data()?.userHandle,
-        sender: snapshot.data()?.userHandle,
-        type: 'like',
-        read: false,
-        screamId: doc.id
-      })
+      if (doc.exists && doc.data()?.userHandle !== snapshot.data().userHandle)
+        await db.doc(`notifications/${snapshot.id}`).set({
+          createdAt: new Date().toISOString(),
+          recipient: doc.data()?.userHandle,
+          sender: snapshot.data()?.userHandle,
+          type: 'like',
+          read: false,
+          screamId: doc.id
+        })
     } catch (err) {
       console.error(err)
     }
@@ -82,14 +81,15 @@ export const createNotificationsOnComment = functions.firestore
     try {
       const doc = await db.doc(`/screams/${snapshot.data().screamId}`).get()
 
-      await db.doc(`notifications/${snapshot.id}`).set({
-        createdAt: new Date().toISOString(),
-        recipient: doc.data()?.userHandle,
-        sender: snapshot.data()?.userHandle,
-        type: 'comment',
-        read: false,
-        screamId: doc.id
-      })
+      if (doc.exists && doc.data()?.userHandle !== snapshot.data().userHandle)
+        await db.doc(`notifications/${snapshot.id}`).set({
+          createdAt: new Date().toISOString(),
+          recipient: doc.data()?.userHandle,
+          sender: snapshot.data()?.userHandle,
+          type: 'comment',
+          read: false,
+          screamId: doc.id
+        })
     } catch (err) {
       console.error(err)
     }

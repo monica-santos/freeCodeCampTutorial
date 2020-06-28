@@ -103,7 +103,7 @@ const addCommentOnScream = async (request: Request, response: Response) => {
     const { handle: userHandle, imageUrl: userImage } = request.user
 
     if (body.trim() === '')
-      return response.status(500).json({ error: 'Must not be empty' })
+      return response.status(500).json({ comment: 'Must not be empty' })
 
     const doc = await db.doc(`screams/${screamId}`).get()
     if (!doc.exists)

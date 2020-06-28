@@ -95,3 +95,24 @@ export const createNotificationsOnComment = functions.firestore
     }
     return
   })
+
+export const onUserImageChange = functions.firestore
+  .document('users/{id}')
+  .onUpdate(async (change) => {
+    if (change.before.data().imageUrl === change.after.data().imageUrl) return
+
+    const batch = db.batch()
+    try {
+      const docs = await db
+        .collection('screams')
+        .where('userHandle', '==', change.before.data().handle)
+        .get()
+      docs.forEach((doc) => {
+        const scream = db.doc(`screams/${doc.id}`)
+        batch.update(scream, { userImage: change.after.data().imageUrl })
+      })
+    } catch (err) {
+      console.error(err)
+    }
+    return
+  })

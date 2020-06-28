@@ -17,6 +17,7 @@ import {
   getAuthenticatedUser
 } from './handlers/users'
 import { FBAuth } from './middlewares/firebaseAuth'
+import { db } from './services/admin'
 
 const app = express()
 
@@ -36,3 +37,54 @@ app.post('/scream/:screamId/like', FBAuth, addLikeToScream)
 app.post('/scream/:screamId/unlike', FBAuth, removeLikeFromScream)
 
 export const api = functions.https.onRequest(app)
+
+export const createNotificationsOnLike = functions.firestore
+  .document('likes/{id}')
+  .onCreate(async (snapshot) => {
+    try {
+      const doc = await db.doc(`/screams/${snapshot.data().screamId}`).get()
+
+      await db.doc(`notifications/${snapshot.id}`).set({
+        createdAt: new Date().toISOString(),
+        recipient: doc.data()?.userHandle,
+        sender: snapshot.data()?.userHandle,
+        type: 'like',
+        read: false,
+        screamId: doc.id
+      })
+    } catch (err) {
+      console.error(err)
+    }
+    return
+  })
+
+export const deleteNotificationsOnUnlike = functions.firestore
+  .document('likes/{id}')
+  .onDelete(async (snapshot) => {
+    try {
+      await db.doc(`/notifications/${snapshot.id}`).delete()
+    } catch (err) {
+      console.error(err)
+    }
+    return
+  })
+
+export const createNotificationsOnComment = functions.firestore
+  .document('comments/{id}')
+  .onCreate(async (snapshot) => {
+    try {
+      const doc = await db.doc(`/screams/${snapshot.data().screamId}`).get()
+
+      await db.doc(`notifications/${snapshot.id}`).set({
+        createdAt: new Date().toISOString(),
+        recipient: doc.data()?.userHandle,
+        sender: snapshot.data()?.userHandle,
+        type: 'comment',
+        read: false,
+        screamId: doc.id
+      })
+    } catch (err) {
+      console.error(err)
+    }
+    return
+  })

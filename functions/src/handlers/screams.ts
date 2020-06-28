@@ -43,6 +43,35 @@ const getAllScreams = async (_: Request, response: Response) => {
   }
 }
 
+const deleteScream = async (request: Request, response: Response) => {
+  try {
+    const { screamId } = request.params
+    const document = await db.doc(`screams/${screamId}`)
+
+    const doc = await document.get()
+
+    if (!doc.exists)
+      return response.status(404).json({ error: 'Scream not found' })
+
+    if (doc.data()?.userHandle !== request.user.handle)
+      return response.status(403).json({ error: 'Unauthorized' })
+
+    const [commentsData, likesData] = await Promise.all([
+      db.collection('comments').where('screamId', '==', screamId).get(),
+      db.collection('likes').where('screamId', '==', screamId).get()
+    ])
+
+    commentsData.forEach((doc) => doc.ref.delete())
+    likesData.forEach((doc) => doc.ref.delete())
+
+    await document.delete()
+    return response.json({ message: 'Scream deleted successfully' })
+  } catch (err) {
+    console.error(err)
+    return response.status(500).json({ error: err.code })
+  }
+}
+
 const getScream = async (request: Request, response: Response) => {
   try {
     const { screamId } = request.params
@@ -88,7 +117,7 @@ const addCommentOnScream = async (request: Request, response: Response) => {
       userImage
     }
 
-    await doc.ref.update({ commentCount: doc.data()?.commentCount + 1})
+    await doc.ref.update({ commentCount: doc.data()?.commentCount + 1 })
     await db.collection('comments').add(comment)
 
     return response.json({ comment })
@@ -97,6 +126,7 @@ const addCommentOnScream = async (request: Request, response: Response) => {
     return response.status(500).json({ error: err.code })
   }
 }
+
 const addLikeToScream = async (request: Request, response: Response) => {
   try {
     const { handle: userHandle } = request.user
@@ -136,6 +166,7 @@ const addLikeToScream = async (request: Request, response: Response) => {
     return response.status(500).json({ error: err.code })
   }
 }
+
 const removeLikeFromScream = async (request: Request, response: Response) => {
   try {
     const { handle: userHandle } = request.user
@@ -178,6 +209,7 @@ export {
   createScream,
   getAllScreams,
   getScream,
+  deleteScream,
   addCommentOnScream,
   addLikeToScream,
   removeLikeFromScream

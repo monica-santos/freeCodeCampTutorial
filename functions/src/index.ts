@@ -6,6 +6,7 @@ import {
   createScream,
   getAllScreams,
   getScream,
+  deleteScream,
   addCommentOnScream,
   addLikeToScream,
   removeLikeFromScream
@@ -29,6 +30,7 @@ app.get('/user/', FBAuth, getAuthenticatedUser)
 app.post('/screams', FBAuth, createScream)
 app.get('/screams', FBAuth, getAllScreams)
 app.get('/scream/:screamId', FBAuth, getScream)
+app.delete('/scream/:screamId', FBAuth, deleteScream)
 app.post('/scream/:screamId/comment', FBAuth, addCommentOnScream)
 app.post('/scream/:screamId/like', FBAuth, addLikeToScream)
 app.post('/scream/:screamId/unlike', FBAuth, removeLikeFromScream)

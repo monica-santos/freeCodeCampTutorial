@@ -14,7 +14,9 @@ import {
 import {
   uploadImage,
   addUserDetails,
-  getAuthenticatedUser
+  getAuthenticatedUser,
+  getUserDetails,
+  markNotificationRead
 } from './handlers/users'
 import { FBAuth } from './middlewares/firebaseAuth'
 import { db } from './services/admin'
@@ -27,14 +29,19 @@ app.post('/login', login)
 app.patch('/user/image', FBAuth, uploadImage)
 app.patch('/user/', FBAuth, addUserDetails)
 app.get('/user/', FBAuth, getAuthenticatedUser)
+app.post('/user/notifications', FBAuth, markNotificationRead)
+
+app.get('/user/:handle', getUserDetails)
+
 
 app.post('/screams', FBAuth, createScream)
-app.get('/screams', FBAuth, getAllScreams)
-app.get('/scream/:screamId', FBAuth, getScream)
 app.delete('/scream/:screamId', FBAuth, deleteScream)
 app.post('/scream/:screamId/comment', FBAuth, addCommentOnScream)
 app.post('/scream/:screamId/like', FBAuth, addLikeToScream)
 app.post('/scream/:screamId/unlike', FBAuth, removeLikeFromScream)
+
+app.get('/screams', getAllScreams)
+app.get('/scream/:screamId', getScream)
 
 export const api = functions.https.onRequest(app)
 
